@@ -1,59 +1,68 @@
 # -*- coding: utf-8 -*-
-
 """
 A hardware module for communicating with the fast counter FPGA.
 
-Copyright (c) 2021, the qudi developers. See the AUTHORS.md file at the top-level directory of this
-distribution and on <https://github.com/Ulm-IQO/qudi-iqo-modules/>
+Qudi is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-This file is part of qudi.
+Qudi is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-Qudi is free software: you can redistribute it and/or modify it under the terms of
-the GNU Lesser General Public License as published by the Free Software Foundation,
-either version 3 of the License, or (at your option) any later version.
+You should have received a copy of the GNU General Public License
+along with Qudi. If not, see <http://www.gnu.org/licenses/>.
 
-Qudi is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License along with qudi.
-If not, see <https://www.gnu.org/licenses/>.
+Copyright (c) the Qudi Developers. See the COPYRIGHT.txt file at the
+top-level directory of this distribution and at <https://github.com/Ulm-IQO/qudi/>
 """
 
+from interface.fast_counter_interface import FastCounterInterface
 import numpy as np
 import TimeTagger as tt
+from core.module import Base
+from core.configoption import ConfigOption
+from core.connector import Connector
+import os
+import time
 
-from qudi.interface.fast_counter_interface import FastCounterInterface
-from qudi.core.configoption import ConfigOption
 
-
-class TimeTaggerFastCounter(FastCounterInterface):
+class TimeTaggerNDHistograms(Base, FastCounterInterface):
     """ Hardware class to controls a Time Tagger from Swabian Instruments.
 
     Example config for copy-paste:
 
     fastcounter_timetagger:
         module.Class: 'swabian_instruments.timetagger_fast_counter.TimeTaggerFastCounter'
-        options:
-            timetagger_channel_apd_0: 0
-            timetagger_channel_apd_1: 1
-            timetagger_channel_detect: 2
-            timetagger_channel_sequence: 3
-            timetagger_sum_channels: 4
+        timetagger_channel_apd_0: 0
+        timetagger_channel_apd_1: 1
+        timetagger_channel_detect: 2
+        timetagger_sum_channels: 4
+        timetagger_n_bins_dimension_two: 2
+        timetagger_channel_next_dimension:
 
     """
+
+    timetagger_base = Connector(interface='TimeTaggerBase')
 
     _channel_apd_0 = ConfigOption('timetagger_channel_apd_0', missing='error')
     _channel_apd_1 = ConfigOption('timetagger_channel_apd_1', missing='error')
     _channel_detect = ConfigOption('timetagger_channel_detect', missing='error')
-    _channel_sequence = ConfigOption('timetagger_channel_sequence', missing='error')
+    _channel_next_dimension = ConfigOption('timetagger_channel_next_dimension', missing='error')
+    # number of parameters to sweep in the second dimension (pixels; current on/off)
+    _n_bins_dimension_two = ConfigOption('timetagger_n_bins_dimension_two', missing='error')
     _sum_channels = ConfigOption('timetagger_sum_channels', True, missing='warn')
 
     def on_activate(self):
         """ Connect and configure the access to the FPGA.
         """
-        self._tagger = tt.createTimeTagger()
-        self._tagger.reset()
+        # self._tagger = tt.createTimeTagger()
+        self._tt_base = self.timetagger_base()
+
+        self._tagger = self._tt_base._tagger
+        # self._tagger.reset()
 
         self._number_of_gates = int(100)
         self._bin_width = 1
@@ -108,7 +117,9 @@ class TimeTaggerFastCounter(FastCounterInterface):
 
         # the unit of those entries are seconds per bin. In order to get the
         # current binwidth in seonds use the get_binwidth method.
-        constraints['hardware_binwidth_list'] = [1 / 1000e6]
+        constraints['hardware_binwidth_list'] = [1000*1e-12, 5000*1e-12, 10000*1e-12, 50000*1e-12, 100000*1e-12]
+        constraints['binwidth min'] = 1e-12
+        constraints['binwidth max'] = 1
 
         # TODO: think maybe about a software_binwidth_list, which will
         #      postprocess the obtained counts. These bins must be integer
@@ -140,22 +151,43 @@ class TimeTaggerFastCounter(FastCounterInterface):
                     gate_length_s: the actual set gate length in seconds
                     number_of_gates: the number of gated, which are accepted
         """
-        self._number_of_gates = number_of_gates
+        self._number_of_gates = number_of_gates  # number of gates for a single dimension (number of frequencies
+        # samples)
         self._bin_width = bin_width_s * 1e9
         self._record_length = 1 + int(record_length_s / bin_width_s)
         self.statusvar = 1
 
-        self.pulsed = tt.TimeDifferences(
+        self.pulsed = tt.TimeDifferencesND(
             tagger=self._tagger,
             click_channel=self._channel_apd,
             start_channel=self._channel_detect,
-            next_channel=self._channel_detect,
-            sync_channel=tt.CHANNEL_UNUSED,
+            next_channels=[self._channel_detect, self._channel_next_dimension],
+            sync_channels=[tt.CHANNEL_UNUSED, tt.CHANNEL_UNUSED],
             binwidth=int(np.round(self._bin_width * 1000)),
             n_bins=int(self._record_length),
-            n_histograms=number_of_gates)
+            n_histograms=[number_of_gates, self._n_bins_dimension_two])
 
         self.pulsed.stop()
+        self.pulsed.clear()
+
+        # add a counter to count how many measurement repitions have passed,
+        # this counts the number of triggers to the timetagger
+
+        self.count_triggers = tt.Histogram(self._tagger,
+                                           click_channel=self._channel_detect,
+                                           start_channel=tt.CHANNEL_UNUSED,
+                                           binwidth=int(1e3),
+                                           n_bins=1)
+        self.count_triggers.stop()
+        self.count_triggers.clear()
+
+        self.count_dimtwo= tt.Histogram(self._tagger,
+                                           click_channel=self._channel_next_dimension,
+                                           start_channel=tt.CHANNEL_UNUSED,
+                                           binwidth=int(1e3),
+                                           n_bins=1)
+        self.count_dimtwo.stop()
+        self.count_dimtwo.clear()
 
         return bin_width_s, record_length_s, number_of_gates
 
@@ -165,6 +197,11 @@ class TimeTaggerFastCounter(FastCounterInterface):
         self.pulsed.clear()
         self.pulsed.start()
         self._tagger.sync()
+        self.count_triggers.clear()
+        self.count_triggers.start()
+
+        self.count_dimtwo.clear()
+        self.count_dimtwo.start()
         self.statusvar = 2
         return 0
 
@@ -172,6 +209,7 @@ class TimeTaggerFastCounter(FastCounterInterface):
         """ Stop the fast counter. """
         if self.module_state() == 'locked':
             self.pulsed.stop()
+            self.count_triggers.stop()
             self.module_state.unlock()
         self.statusvar = 1
         return 0
@@ -183,6 +221,7 @@ class TimeTaggerFastCounter(FastCounterInterface):
         """
         if self.module_state() == 'locked':
             self.pulsed.stop()
+            self.count_triggers.stop()
             self.statusvar = 3
         return 0
 
@@ -193,6 +232,7 @@ class TimeTaggerFastCounter(FastCounterInterface):
         """
         if self.module_state() == 'locked':
             self.pulsed.start()
+            self.count_triggers.start()
             self._tagger.sync()
             self.statusvar = 2
         return 0
@@ -217,9 +257,45 @@ class TimeTaggerFastCounter(FastCounterInterface):
         care of in this hardware class. A possible overflow of the histogram
         bins must be caught here and taken care of.
         """
-        info_dict = {'elapsed_sweeps': None,
-                     'elapsed_time': None}  # TODO : implement that according to hardware capabilities
-        return np.array(self.pulsed.getData(), dtype='int64'), info_dict
+        # first check if the second dimension is used, otherwise the data collection is as usual
+        used_dimtwo = self.count_dimtwo.getData()
+        data_array = np.array(self.pulsed.getData(), dtype='int64')
+
+        if not used_dimtwo:
+                number_of_reps = self.count_triggers.getData() / self._number_of_gates
+
+                info_dict = {'elapsed_sweeps': number_of_reps,
+                             'elapsed_time': None}  # TODO : implement that according to hardware capabilities
+
+                data_array = np.array(self.pulsed.getData(), dtype='int64')
+                data_array = data_array[:self._number_of_gates]
+        # with ND histograms there are N dimensions X K dimensions, example:
+        # dimension 1: pixels / current on-off
+        # dimension 2: frequency / tau
+        # if there is only 1 dimension I need to remove the extra histograms
+        if used_dimtwo:
+            # number of reps needs to divide by the second dimension as well, not sure what to do with
+            number_of_reps = self.count_triggers.getData() / (self._number_of_gates * self._n_bins_dimension_two)
+            info_dict = {'elapsed_sweeps': number_of_reps,
+                         'elapsed_time': None}  # TODO : implement that according to hardware capabilities
+
+            # Calculate the midpoint of the array - this if dimension two has 2 points
+            midpoint = len(data_array) // self._n_bins_dimension_two
+
+            # Split the array into two parts - data is collected by first filling 1:N histograms (ODMR 1) and after
+            # the trigger in dimension 2, histograms N+1:2N are filled (odmr 2). In other alternating measurements
+            # the data is collected in pairs (tau0-state0,tau0-state1,tau1-state0, tau1-state1, tau2-state0,
+            # tau2-state1, ...) the data should be aranged in a similar manner
+            first_half = data_array[:midpoint]
+            second_half = data_array[midpoint:]
+            result_array = np.empty_like(data_array)
+            # return data in alternating manner so that the pulsed logic can handle the data
+            result_array[0::2] = first_half
+            result_array[1::2] = second_half
+            data_array = result_array
+
+        return data_array, info_dict
+
 
     def get_status(self):
         """ Receives the current status of the Fast Counter and outputs it as
@@ -237,3 +313,4 @@ class TimeTaggerFastCounter(FastCounterInterface):
         """ Returns the width of a single timebin in the timetrace in seconds. """
         width_in_seconds = self._bin_width * 1e-9
         return width_in_seconds
+
