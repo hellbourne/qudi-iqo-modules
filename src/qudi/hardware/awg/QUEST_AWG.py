@@ -53,18 +53,18 @@ class AWG_spectrum(Base, PulserInterface):
 
     """
 
-    _modclass = 'awg_sp'
-    _modtype = 'hardware'
-
+    # _modclass = 'awg_sp'
+    # _modtype = 'hardware'
+    #
     # config options
-    _tmp_work_dir = ConfigOption(name='tmp_work_dir',
-                                 default=os.path.join(get_home_dir(), 'pulsed_files'),
-                                 missing='warn')
+    # _tmp_work_dir = ConfigOption(name='tmp_work_dir',
+    #                              default=os.path.join(get_home_dir(), 'pulsed_files'),
+    #                              missing='warn')
     ip = ConfigOption(name='awg_ip_address', missing='error')
-    analog_amplitudes = ConfigOption(name='analog_amplitudes', default={'a_ch0': 1.0,
-                                                                        'a_ch1': 1.0,
-                                                                        'a_ch2': 1.0,
-                                                                        'a_ch3': 1.0})
+    # analog_amplitudes = ConfigOption(name='analog_amplitudes', default={'a_ch0': 1.0,
+    #                                                                     'a_ch1': 1.0,
+    #                                                                     'a_ch2': 1.0,
+    #                                                                     'a_ch3': 1.0})
     waveform_limit = 20e6
 
     def __init__(self, config, **kwargs):
