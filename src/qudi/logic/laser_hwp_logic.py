@@ -24,25 +24,27 @@ import numpy as np
 from qtpy import QtCore
 
 from collections import OrderedDict
-from core.util.mutex import Mutex
-from core.util.helpers import in_range
-from core.connector import Connector
-from core.statusvariable import StatusVar
-from core.configoption import ConfigOption
-from logic.generic_logic import GenericLogic
-from interface.diode_laser_interface import DiodeMode, LaserState
-from hardware.national_instruments_x_series import AnalogInputChannel
+from qudi.util.mutex import Mutex
+from qudi.util.helpers import in_range
+from qudi.core.connector import Connector
+from qudi.core.statusvariable import StatusVar
+from qudi.core.configoption import ConfigOption
+from qudi.core.module import LogicBase
+
+# from logic.generic_logic import GenericLogic
+from qudi.interface.diode_laser_interface import DiodeMode, LaserState
+from qudi.hardware.ni_x_series.ni_x_series_in_streamer import AnalogInputChannel
 
 
-class LaserHWPLogic(GenericLogic):
+class LaserHWPLogic(LogicBase):
     """ Logic module aggregating multiple hardware switches.
     """
     diode_laser = Connector(interface='DiodeLaserInterface')
     hwp_stage = Connector(interface='MotorInterface')
-    fit_logic = Connector(interface='FitLogic')
+    # fit_logic = Connector(interface='FitLogic')
 
     # Status variables
-    fc = StatusVar('fits', None)
+    # fc = StatusVar('fits', None)
     hwp_calibration = StatusVar('hwp_calibration', {})
     isCalibrated = StatusVar('isCalibrated', False)
     sweep_start = StatusVar('sweep_start', 0)
@@ -65,7 +67,7 @@ class LaserHWPLogic(GenericLogic):
     sigHwpElapsedTimeUpdated = QtCore.Signal(float, int)
     sigHwpPlotUpdated = QtCore.Signal(np.ndarray, np.ndarray)
     sigHwpStateUpdated = QtCore.Signal(bool)
-    sigHwpFitUpdated = QtCore.Signal(np.ndarray, np.ndarray, dict)
+    # sigHwpFitUpdated = QtCore.Signal(np.ndarray, np.ndarray, dict)
     sigHwpParameterUpdated = QtCore.Signal(dict)
     sigHwpCalibrated = QtCore.Signal(str)
     # sigPhotodiodeCalibrate = QtCore.Signal(float)
@@ -89,7 +91,7 @@ class LaserHWPLogic(GenericLogic):
         self.ai_channel = None
         self.elapsed_points = 0
         self.stopHWP = False
-        self.fit_parameters = {}
+        # self.fit_parameters = {}
         self.recalibrated = False
         self.RequestedPowerOutOfRange = False
         self.Sweeping = False
@@ -100,7 +102,7 @@ class LaserHWPLogic(GenericLogic):
         # Declaring instances of interfacing modules
         self._diode_laser = self.diode_laser()
         self._hwp_stage = self.hwp_stage()
-        self._fit_logic = self.fit_logic()
+        # self._fit_logic = self.fit_logic()
 
         self.stopRequest = False
         self.bufferLength = 100
@@ -132,8 +134,8 @@ class LaserHWPLogic(GenericLogic):
         # Initialize hwp sweep parameters
         self.hwp_angles = np.arange(start=self.sweep_start, stop=self.sweep_stop, step=self.sweep_step)
         self.hwp_curve = np.zeros(self.hwp_angles.size)
-        self.hwp_fit_x = self.hwp_angles
-        self.hwp_fit_y = self.hwp_curve
+        # self.hwp_fit_x = self.hwp_angles
+        # self.hwp_fit_y = self.hwp_curve
         self.update_calibration_status()
 
         self._initialize_hwp_plot()
@@ -257,8 +259,8 @@ class LaserHWPLogic(GenericLogic):
         if not self.recalibrated:
             self.log.error('No calibration curve available, did not recalibrate')
             return -1
-        for key, value in self.fit_parameters.items():
-            self.hwp_calibration[key] = value['value']
+        # for key, value in self.fit_parameters.items():
+        #     self.hwp_calibration[key] = value['value']
         self.hwp_calibration['Time of calibration'] = time.strftime('%c')
         self.hwp_calibration['Diode power'] = self.diode_power
         self.isCalibrated = True
@@ -306,7 +308,7 @@ class LaserHWPLogic(GenericLogic):
 
             self.Sweeping = True
             self.stopHWP = False
-            self.fc.clear_results()
+            # self.fc.clear_results()
 
             self._startTime = time.time() - self.elapsed_time
             self.sigHwpElapsedTimeUpdated.emit(self.elapsed_time, self.elapsed_points)
@@ -331,14 +333,14 @@ class LaserHWPLogic(GenericLogic):
     def _initialize_hwp_plot(self):
         self.hwp_angles = np.arange(0, 91)
         self.hwp_curve = np.zeros(self.hwp_angles.size)
-        self.hwp_fit_x = np.arange(0, 91)
-        self.hwp_fit_y = np.zeros(self.hwp_fit_x.size)
+        # self.hwp_fit_x = np.arange(0, 91)
+        # self.hwp_fit_y = np.zeros(self.hwp_fit_x.size)
 
         self.sigHwpPlotUpdated.emit(self.hwp_angles, self.hwp_curve)
-        self.fc.fit_list['Sine with offset']['use_settings'] = {}
-        self.fc.set_current_fit('Sine with offset')
-        current_fit = self.fc.current_fit
-        self.sigHwpFitUpdated.emit(self.hwp_fit_x, self.hwp_fit_y, {})
+        # self.fc.fit_list['Sine with offset']['use_settings'] = {}
+        # self.fc.set_current_fit('Sine with offset')
+        # current_fit = self.fc.current_fit
+        # self.sigHwpFitUpdated.emit(self.hwp_fit_x, self.hwp_fit_y, {})
         return
 
     def _get_hwp_point(self):
@@ -368,8 +370,8 @@ class LaserHWPLogic(GenericLogic):
                 time.sleep(0.1)
                 self.hwp_curve = np.append(self.hwp_curve, self.get_laser_power())
                 plot_angles = self.hwp_angles[0:len(self.hwp_curve)]
-                if self.elapsed_points > 5:
-                    self.do_fit(x_data=plot_angles, y_data=self.hwp_curve)
+                # if self.elapsed_points > 5:
+                #     self.do_fit(x_data=plot_angles, y_data=self.hwp_curve)
             self.elapsed_points += 1
             self.elapsed_time = time.time() - self._startTime
             self.sigHwpElapsedTimeUpdated.emit(self.elapsed_time, self.elapsed_points)
@@ -385,58 +387,58 @@ class LaserHWPLogic(GenericLogic):
     def save_hwp_data(self):
         return
 
-    @fc.constructor
-    def sv_set_fits(self, val):
-        # Setup fit container
-        fc = self.fit_logic().make_fit_container('HWP rotation', '1d')
-        fc.set_units(['deg', 'W'])
-        if isinstance(val, dict) and len(val) > 0:
-            fc.load_from_dict(val)
-        else:
-            d1 = OrderedDict()
-            d1['Sine with offset'] = {
-                'fit_function': 'sine',
-                'estimator': 'generic',
-                'use_settings': {'amplitude': False,
-                                 'frequency': False,
-                                 'phase': False,
-                                 'offset': False}
-                }
-            default_fits = OrderedDict()
-            default_fits['1d'] = d1
-            fc.load_from_dict(default_fits)
-        return fc
-
-    @fc.representer
-    def sv_get_fits(self, val):
-        """ save configured fits """
-        if len(val.fit_list) > 0:
-            return val.save_to_dict()
-        else:
-            return None
-
-    def do_fit(self, x_data=None, y_data=None):
-        """
-        Execute the currently configured fit on the measurement data. Optionally on passed data
-        """
-        if (x_data is None) or (y_data is None):
-            x_data = self.hwp_angles
-            y_data = self.hwp_curve
-
-        self.hwp_fit_x, self.hwp_fit_y, result = self.fc.do_fit(x_data, y_data)
-
-        if result is None:
-            result_str_dict = {}
-        else:
-            result_str_dict = result.result_str_dict
-            del result_str_dict['Contrast'] # We don't need this fit parameter, it is relevant for Rabi and such
-        self.sigHwpFitUpdated.emit(
-            self.hwp_fit_x, self.hwp_fit_y, result_str_dict)
-        self.fit_parameters = result_str_dict
-        return
-
-    def get_fit_functions(self):
-        return list(self.fc.fit_list)
+    # @fc.constructor
+    # def sv_set_fits(self, val):
+    #     # Setup fit container
+    #     fc = self.fit_logic().make_fit_container('HWP rotation', '1d')
+    #     fc.set_units(['deg', 'W'])
+    #     if isinstance(val, dict) and len(val) > 0:
+    #         fc.load_from_dict(val)
+    #     else:
+    #         d1 = OrderedDict()
+    #         d1['Sine with offset'] = {
+    #             'fit_function': 'sine',
+    #             'estimator': 'generic',
+    #             'use_settings': {'amplitude': False,
+    #                              'frequency': False,
+    #                              'phase': False,
+    #                              'offset': False}
+    #             }
+    #         default_fits = OrderedDict()
+    #         default_fits['1d'] = d1
+    #         fc.load_from_dict(default_fits)
+    #     return fc
+    #
+    # @fc.representer
+    # def sv_get_fits(self, val):
+    #     """ save configured fits """
+    #     if len(val.fit_list) > 0:
+    #         return val.save_to_dict()
+    #     else:
+    #         return None
+    #
+    # def do_fit(self, x_data=None, y_data=None):
+    #     """
+    #     Execute the currently configured fit on the measurement data. Optionally on passed data
+    #     """
+    #     if (x_data is None) or (y_data is None):
+    #         x_data = self.hwp_angles
+    #         y_data = self.hwp_curve
+    #
+    #     self.hwp_fit_x, self.hwp_fit_y, result = self.fc.do_fit(x_data, y_data)
+    #
+    #     if result is None:
+    #         result_str_dict = {}
+    #     else:
+    #         result_str_dict = result.result_str_dict
+    #         del result_str_dict['Contrast'] # We don't need this fit parameter, it is relevant for Rabi and such
+    #     self.sigHwpFitUpdated.emit(
+    #         self.hwp_fit_x, self.hwp_fit_y, result_str_dict)
+    #     self.fit_parameters = result_str_dict
+    #     return
+    #
+    # def get_fit_functions(self):
+    #     return list(self.fc.fit_list)
 
     def set_sweep_parameters(self, start, stop, step):
         """ Set the desired frequency parameters for list and sweep mode
@@ -469,11 +471,11 @@ class LaserHWPLogic(GenericLogic):
     def set_laser_power(self, target_power):
         """ Set laser output power, in W. """
         calib_power = self.hwp_calibration['Diode power']
-        if not calib_power == self.diode_power:
-            self.log.error('Current calibration fits diode power of {}'
-                           ' but diode is currently on {}. Recalibrate or set diode to'
-                           ' appropriate power level.'.format(calib_power, self.diode_power))
-            return -1
+        # if not calib_power == self.diode_power:
+        #     self.log.error('Current calibration fits diode power of {}'
+        #                    ' but diode is currently on {}. Recalibrate or set diode to'
+        #                    ' appropriate power level.'.format(calib_power, self.diode_power))
+        #     return -1
         holding_time = 0.1
         epsilon = 5*10**-6
         delta = 10**-4

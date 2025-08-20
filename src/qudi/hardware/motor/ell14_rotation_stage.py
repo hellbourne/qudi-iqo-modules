@@ -26,7 +26,7 @@ from collections import OrderedDict
 import bitstring
 from qudi.core.configoption import ConfigOption
 from qudi.core.module import Base
-from interface.motor_interface import MotorInterface
+from qudi.interface.motor_interface import MotorInterface
 from enum import Enum
 from qudi.core.util.mutex import Mutex
 

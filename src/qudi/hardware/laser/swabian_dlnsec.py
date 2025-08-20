@@ -19,11 +19,11 @@ Copyright (c) the Qudi Developers. See the COPYRIGHT.txt file at the
 top-level directory of this distribution and at <https://github.com/Ulm-IQO/qudi/>
 """
 
-from core.module import Base
-from core.configoption import ConfigOption
-from core.statusvariable import StatusVar
+from qudi.core.module import Base
+from qudi.core.configoption import ConfigOption
+from qudi.core.statusvariable import StatusVar
 import visa
-from interface.diode_laser_interface import DiodeLaserInterface
+from qudi.interface.diode_laser_interface import DiodeLaserInterface
 import time
 
 

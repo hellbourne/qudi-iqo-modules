@@ -25,11 +25,11 @@ import os
 import pyqtgraph as pg
 import time
 
-from core.connector import Connector
-from core.util import units
+from qudi.core.connector import Connector
+from qudi.util import units
 from gui.colordefs import QudiPalettePale as palette
-from gui.guibase import GUIBase
-from interface.diode_laser_interface import DiodeMode, LaserState
+from qudi.core.module import GUIBase
+from qudi.interface.diode_laser_interface import DiodeMode, LaserState
 from qtpy import QtCore
 from qtpy import QtWidgets
 from qtpy import uic

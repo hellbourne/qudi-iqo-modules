@@ -20,8 +20,10 @@ top-level directory of this distribution and at <https://github.com/Ulm-IQO/qudi
 """
 
 from enum import Enum
-from qudi.core.interface import abstract_interface_method
-from qudi.core.meta import InterfaceMetaclass
+from abc import abstractmethod
+from qudi.core.module import Base
+# from qudi.core.interface import abstract_interface_method
+# from qudi.core.meta import InterfaceMetaclass
 
 
 class DiodeMode(Enum):
@@ -36,25 +38,25 @@ class LaserState(Enum):
     UNKNOWN = 3
 
 
-class DiodeLaserInterface(metaclass=InterfaceMetaclass):
+class DiodeLaserInterface(metaclass=Base):
     """
     """
 
-    # @abstract_interface_method
+    # @abstractmethod
     # def get_power_range(self):
     #     """ Return laser power
     #     @return tuple(p1, p2): Laser power range in watts
     #     """
     #     pass
 
-    @abstract_interface_method
+    @abstractmethod
     def get_power(self):
         """ Return laser power
         @return float: Actual laser power in watts
         """
         pass
 
-    @abstract_interface_method
+    @abstractmethod
     def set_power(self, power):
         """ Set laer power ins watts
           @param float power: laser power setpoint in watts
@@ -63,42 +65,42 @@ class DiodeLaserInterface(metaclass=InterfaceMetaclass):
         """
         pass
 
-    # @abstract_interface_method
+    # @abstractmethod
     # def get_power_setpoint(self):
     #     """ Return laser power setpoint
     #     @return float: Laser power setpoint in watts
     #     """
     #     pass
 
-    # @abstract_interface_method
+    # @abstractmethod
     # def get_current_unit(self):
     #     """ Return laser current unit
     #     @return str: unit
     #     """
     #     pass
 
-    # @abstract_interface_method
+    # @abstractmethod
     # def get_current(self):
     #     """ Return laser current
     #     @return float: actual laser current as ampere or percentage of maximum current
     #     """
     #     pass
 
-    # @abstract_interface_method
+    # @abstractmethod
     # def get_current_range(self):
     #     """ Return laser current range
     #     @return tuple(c1, c2): Laser current range in current units
     #     """
     #     pass
     #
-    # @abstract_interface_method
+    # @abstractmethod
     # def get_current_setpoint(self):
     #     """ Return laser current
     #     @return float: Laser current setpoint in amperes
     #     """
     #     pass
     #
-    # @abstract_interface_method
+    # @abstractmethod
     # def set_current(self, current):
     #     """ Set laser current
     #     @param float current: Laser current setpoint in amperes
@@ -106,21 +108,21 @@ class DiodeLaserInterface(metaclass=InterfaceMetaclass):
     #     """
     #     pass
 
-    @abstract_interface_method
+    @abstractmethod
     def allowed_diode_modes(self):
         """ Get available mode of operation of diode laser
           @return list: list with enum control modes
         """
         pass
 
-    # @abstract_interface_method
+    # @abstractmethod
     # def get_control_mode(self):
     #     """ Get control mode of laser
     #       @return enum ControlMode: control mode
     #     """
     #     pass
 
-    @abstract_interface_method
+    @abstractmethod
     def set_diode_mode(self, mode):
         """ Set diode laser operation mode.
           @param str mode: desired operation mode
@@ -134,28 +136,28 @@ class DiodeLaserInterface(metaclass=InterfaceMetaclass):
         """
         pass
 
-    @abstract_interface_method
+    @abstractmethod
     def on(self):
         """ Turn on laser. Does not open shutter if one is present.
           @return enum LaserState: actual laser state
         """
         pass
 
-    @abstract_interface_method
+    @abstractmethod
     def off(self):
         """ Turn ooff laser. Does not close shutter if one is present.
           @return enum LaserState: actual laser state
         """
         pass
 
-    @abstract_interface_method
+    @abstractmethod
     def get_laser_state(self):
         """ Get laser state.
           @return enum LaserState: laser state
         """
         pass
 
-    # @abstract_interface_method
+    # @abstractmethod
     # def set_laser_state(self, state):
     #     """ Set laser state.
     #       @param enum state: desired laser state
@@ -163,14 +165,14 @@ class DiodeLaserInterface(metaclass=InterfaceMetaclass):
     #     """
     #     pass
 
-    # @abstract_interface_method
+    # @abstractmethod
     # def get_shutter_state(self):
     #     """ Get shutter state. Has a state for no shutter present.
     #       @return enum ShutterState: actual shutter state
     #     """
     #     pass
     #
-    # @abstract_interface_method
+    # @abstractmethod
     # def set_shutter_state(self, state):
     #     """ Set shutter state.
     #       @param enum state: desired shutter state
@@ -178,21 +180,21 @@ class DiodeLaserInterface(metaclass=InterfaceMetaclass):
     #     """
     #     pass
 
-    # @abstract_interface_method
+    # @abstractmethod
     # def get_temperatures(self):
     #     """ Get all available temperatures from laser.
     #       @return dict: dict of name, value for temperatures
     #     """
     #     pass
     #
-    # @abstract_interface_method
+    # @abstractmethod
     # def get_temperature_setpoints(self):
     #     """ Get all available temperature setpoints from laser.
     #       @return dict: dict of name, value for temperature setpoints
     #     """
     #     pass
     #
-    # @abstract_interface_method
+    # @abstractmethod
     # def set_temperatures(self, temps):
     #     """ Set laser temperatures.
     #       @param temps: dict of name, value to be set
@@ -200,7 +202,7 @@ class DiodeLaserInterface(metaclass=InterfaceMetaclass):
     #     """
     #     pass
     #
-    # @abstract_interface_method
+    # @abstractmethod
     # def get_extra_info(self):
     #     """ Show dianostic information about lasers.
     #       @return str: diagnostic info as a string
