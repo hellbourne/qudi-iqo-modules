@@ -20,19 +20,19 @@ Copyright (c) the Qudi Developers. See the COPYRIGHT.txt file at the
 top-level directory of this distribution and at <https://github.com/Ulm-IQO/qudi/>
 """
 
-import hardware.swabian_instruments.TimeTagger as tt
+import TimeTagger as tt
 import time
 import numpy as np
 
-from core.module import Base
-from core.configoption import ConfigOption
-from interface.slow_counter_interface import SlowCounterInterface
-from interface.slow_counter_interface import SlowCounterConstraints
-from interface.slow_counter_interface import CountingMode
-from core.connector import Connector
+# from qudi.core.module import Base
+from qudi.core.configoption import ConfigOption
+from qudi.interface.slow_counter_interface import SlowCounterInterface
+from qudi.interface.slow_counter_interface import SlowCounterConstraints
+from qudi.interface.slow_counter_interface import CountingMode
+# from qudi.core.connector import Connector
 
 
-class TimeTaggerCounter(Base, SlowCounterInterface):
+class TimeTaggerCounter(SlowCounterInterface):
     """ Using the TimeTagger as a slow counter.
 
     Example config for copy-paste:
@@ -44,7 +44,7 @@ class TimeTaggerCounter(Base, SlowCounterInterface):
         timetagger_sum_channels: 2
 
     """
-    timetagger_base = Connector(interface='TimeTaggerBase')
+    # timetagger_base = Connector(interface='TimeTaggerBase')
 
     _channel_apd_0 = ConfigOption('timetagger_channel_apd_0', missing='error')
     _channel_apd_1 = ConfigOption('timetagger_channel_apd_1', None, missing='warn')
