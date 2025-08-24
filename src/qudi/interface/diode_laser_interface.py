@@ -38,7 +38,7 @@ class LaserState(Enum):
     UNKNOWN = 3
 
 
-class DiodeLaserInterface(metaclass=Base):
+class DiodeLaserInterface(Base):
     """
     """
 

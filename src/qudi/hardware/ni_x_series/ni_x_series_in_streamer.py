@@ -24,6 +24,7 @@ If not, see <https://www.gnu.org/licenses/>.
 import ctypes
 import numpy as np
 import nidaqmx as ni
+import PyDAQmx as daq
 from functools import wraps
 from typing import Tuple, List, Optional, Sequence, Union
 from nidaqmx._lib import lib_importer  # Due to NIDAQmx C-API bug needed to bypass property getter

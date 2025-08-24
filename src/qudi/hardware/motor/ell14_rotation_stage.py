@@ -21,17 +21,17 @@ top-level directory of this distribution and at <https://github.com/Ulm-IQO/qudi
 """
 
 import time
-import visa
+import pyvisa as visa
 from collections import OrderedDict
 import bitstring
 from qudi.core.configoption import ConfigOption
 from qudi.core.module import Base
 from qudi.interface.motor_interface import MotorInterface
 from enum import Enum
-from qudi.core.util.mutex import Mutex
+from qudi.util.mutex import Mutex
 
 
-class MotorRotationELL14(Base, MotorInterface):
+class MotorRotationELL14(MotorInterface):
     """
     unstable: Amit Finkler
     at this point assumes only one Elliptec device is connected (no bus), so address is always zero
@@ -49,7 +49,7 @@ class MotorRotationELL14(Base, MotorInterface):
     """
     Configurations
     """
-    resource_name = ConfigOption('resource_name', 'ASRL1::INSTR', missing='warn')
+    resource_name = ConfigOption('resource_name', 'COM8', missing='warn')
 
     # These used to be defined in the configuration. However, there's no reason to define in this in the configuration,
     # as they are hardware-specific and not system dependent settings.

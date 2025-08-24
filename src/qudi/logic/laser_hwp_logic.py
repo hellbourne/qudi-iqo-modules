@@ -21,7 +21,7 @@ top-level directory of this distribution and at <https://github.com/Ulm-IQO/qudi
 
 import time
 import numpy as np
-from qtpy import QtCore
+from PySide2 import QtCore
 
 from collections import OrderedDict
 from qudi.util.mutex import Mutex

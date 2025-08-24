@@ -25,6 +25,7 @@ import TimeTagger as tt
 
 from qudi.interface.fast_counter_interface import FastCounterInterface
 from qudi.core.configoption import ConfigOption
+from qudi.core.connector import Connector
 
 
 class TimeTaggerFastCounter(FastCounterInterface):
@@ -42,7 +43,7 @@ class TimeTaggerFastCounter(FastCounterInterface):
             timetagger_sum_channels: 4
 
     """
-
+    timetagger_base = Connector(interface='TimeTaggerBase')
     _channel_apd_0 = ConfigOption('timetagger_channel_apd_0', missing='error')
     _channel_apd_1 = ConfigOption('timetagger_channel_apd_1', missing='error')
     _channel_detect = ConfigOption('timetagger_channel_detect', missing='error')

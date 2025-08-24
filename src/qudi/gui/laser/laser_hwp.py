@@ -27,12 +27,13 @@ import time
 
 from qudi.core.connector import Connector
 from qudi.util import units
-from gui.colordefs import QudiPalettePale as palette
-from qudi.core.module import GUIBase
+from qudi.util.colordefs import QudiPalettePale as palette
+from qudi.core.module import GuiBase
 from qudi.interface.diode_laser_interface import DiodeMode, LaserState
-from qtpy import QtCore
-from qtpy import QtWidgets
-from qtpy import uic
+from PySide2 import QtCore
+from PySide2 import QtWidgets
+from qudi.util import uic
+
 
 
 class TimeAxisItem(pg.AxisItem):
@@ -58,7 +59,7 @@ class LaserWindow(QtWidgets.QMainWindow):
         ui_file = os.path.join(this_dir, 'ui_laser_hwp.ui')
 
         # Load it
-        super().__init__()
+        super(LaserWindow,self).__init__()
         uic.loadUi(ui_file, self)
         self.show()
 
@@ -76,7 +77,7 @@ class CalibrationWindow(QtWidgets.QMainWindow):
         uic.loadUi(ui_file, self)
 
 
-class LaserGUI(GUIBase):
+class LaserGUI(GuiBase):
     """ FIXME: Please document
     """
 

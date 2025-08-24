@@ -22,12 +22,12 @@ top-level directory of this distribution and at <https://github.com/Ulm-IQO/qudi
 from qudi.core.module import Base
 from qudi.core.configoption import ConfigOption
 from qudi.core.statusvariable import StatusVar
-import visa
+import pyvisa as visa
 from qudi.interface.diode_laser_interface import DiodeLaserInterface
 import time
 
 
-class SwabianDLnSec(Base, DiodeLaserInterface):
+class SwabianDLnSec(DiodeLaserInterface):
     """ Swabian nsec diode laser
 
     Example config for copy-paste:
