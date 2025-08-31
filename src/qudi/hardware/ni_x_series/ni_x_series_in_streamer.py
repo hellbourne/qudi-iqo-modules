@@ -24,6 +24,7 @@ If not, see <https://www.gnu.org/licenses/>.
 import ctypes
 import numpy as np
 import nidaqmx as ni
+import PyDAQmx as daq
 from functools import wraps
 from typing import Tuple, List, Optional, Sequence, Union
 from nidaqmx._lib import lib_importer  # Due to NIDAQmx C-API bug needed to bypass property getter
@@ -863,3 +864,43 @@ class NIXSeriesInStreamer(DataInStreamInterface):
         if 'dev' in term:
             term = term.split('/', 1)[-1]
         return term
+
+class AnalogInputChannel:
+
+    def __init__(self, channel, name='New AI channel', termination='default',
+                 voltage_range=(-5.0, 5.0), units=daq.DAQmx_Val_Volts, scale_name=None,
+                 sample_freq=1000, num_samples=100):
+        # super().__init__(**kwargs)
+        termination_options = {'default': daq.DAQmx_Val_Cfg_Default, 'diff': daq.DAQmx_Val_Diff,
+                               'rse': daq.DAQmx_Val_RSE, 'nrse': daq.DAQmx_Val_NRSE,
+                               'pseudo_diff': daq.DAQmx_Val_PseudoDiff}
+
+        self.sample_freq = sample_freq
+        self.num_samples = num_samples
+        self.data_buffer = np.zeros((num_samples,), dtype=np.float64)
+        self.ai_task = daq.Task()
+        self.ai_task.CreateAIVoltageChan(physicalChannel=channel, nameToAssignToChannel=name,
+                                         terminalConfig=termination_options[termination],
+                                         minVal=voltage_range[0], maxVal=voltage_range[1], units=units,
+                                         customScaleName=scale_name)
+        self.ai_task.CfgSampClkTiming(source=None, rate=self.sample_freq, activeEdge=daq.DAQmx_Val_Rising,
+                                      sampleMode=daq.DAQmx_Val_FiniteSamps, sampsPerChan=self.num_samples)
+
+    def read(self):
+        read_ref = ctypes.c_int32()
+        try:
+            self.ai_task.StartTask()
+            self.ai_task.ReadAnalogF64(numSampsPerChan=self.num_samples, timeout=10.0,
+                                       fillMode=daq.DAQmx_Val_GroupByChannel, readArray=self.data_buffer,
+                                       arraySizeInSamps=self.num_samples, sampsPerChanRead=ctypes.byref(read_ref), reserved=None)
+            self.ai_task.StopTask()
+            return self.data_buffer
+        except daq.DAQmxFunctions.PALResourceReservedError:
+            return [0]
+
+    def read_averaged(self):
+        data_array = self.read()
+        return np.mean(data_array), np.std(data_array)
+
+    def close(self):
+        self.ai_task.ClearTask()
