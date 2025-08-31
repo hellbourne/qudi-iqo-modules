@@ -92,17 +92,23 @@ class SequenceGeneratorLogic(LogicBase):
     # Global parameters describing the channel usage and common parameters used during pulsed object
     # generation for predefined methods.
     _generation_parameters = StatusVar(
-        default={'laser_channel': 'd_ch1',
+        default={'laser_channel': 'd_ch2',
                  'sync_channel': '',
                  'gate_channel': '',
-                 'microwave_channel': 'a_ch1',
+                 'microwave_channel': 'a_ch2',
+                 'i_channel': 'a_ch2',
+                 'q_channel': 'a_ch3',
+                 'iq_freq_shift': 0.0,
                  'microwave_frequency': 2.87e9,
                  'microwave_amplitude': 0.0,
                  'rabi_period': 100e-9,
                  'laser_length': 3e-6,
                  'laser_delay': 500e-9,
                  'wait_time': 1e-6,
-                 'analog_trigger_voltage': 0.0}
+                 'cool_time': 0e-6,
+                 'repolarize_length': 0e-6,
+                 'analog_trigger_voltage': 0.0,
+                 'OPX': True}
     )
 
     # The created pulse objects (PulseBlock, PulseBlockEnsemble, PulseSequence) are saved in

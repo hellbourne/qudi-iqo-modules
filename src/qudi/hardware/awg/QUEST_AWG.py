@@ -25,17 +25,17 @@ import os
 import numpy as np
 import pickle
 import json
-from hardware.awg import SpectrumAWG35 as SpectrumAWG35
-from hardware.awg.pyspcm import *
-from core.util.modules import get_home_dir
-from core.module import Base
-from core.configoption import ConfigOption
+from qudi.hardware.awg import SpectrumAWG35 as SpectrumAWG35
+from qudi.hardware.awg.pyspcm import *
+# from qudi.core.modules import get_home_dir
+from qudi.core.module import Base
+from qudi.core.configoption import ConfigOption
 from collections import OrderedDict
-from interface.pulser_interface import PulserInterface, PulserConstraints
+from qudi.interface.pulser_interface import PulserInterface, PulserConstraints
 from matplotlib import pyplot as plt
 
 
-class AWG_spectrum(Base, PulserInterface):
+class AWG_spectrum(PulserInterface):
     """ A hardware module for the Spectrum AWG for generating
         waveforms and sequences thereof.
 
@@ -57,14 +57,14 @@ class AWG_spectrum(Base, PulserInterface):
     # _modtype = 'hardware'
     #
     # config options
-    # _tmp_work_dir = ConfigOption(name='tmp_work_dir',
-    #                              default=os.path.join(get_home_dir(), 'pulsed_files'),
-    #                              missing='warn')
+    _tmp_work_dir = ConfigOption(name='tmp_work_dir',
+                                 default=os.path.join(os.path.abspath(os.path.expanduser('~')), 'pulsed_files'),
+                                 missing='warn')
     ip = ConfigOption(name='awg_ip_address', missing='error')
-    # analog_amplitudes = ConfigOption(name='analog_amplitudes', default={'a_ch0': 1.0,
-    #                                                                     'a_ch1': 1.0,
-    #                                                                     'a_ch2': 1.0,
-    #                                                                     'a_ch3': 1.0})
+    analog_amplitudes = ConfigOption(name='analog_amplitudes', default={'a_ch0': 1.0,
+                                                                        'a_ch1': 1.0,
+                                                                        'a_ch2': 1.0,
+                                                                        'a_ch3': 1.0})
     waveform_limit = 20e6
 
     def __init__(self, config, **kwargs):

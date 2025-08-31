@@ -1102,24 +1102,63 @@ class PredefinedGeneratorBase:
         return None if channel == '' else channel
 
     @property
+    def rf_channel(self):
+        channel = self.generation_parameters.get('rf_channel')
+        return None if channel == '' else channel
+
+    @property
+    def trig_channel(self):
+        channel = self.generation_parameters.get('trig_channel')
+        return None if channel == '' else channel
+
+    @property
+    def trigtwo_channel(self):
+        channel = self.generation_parameters.get('trigtwo_channel')
+        return None if channel == '' else channel
+
+    @property
+    def rf_frequency(self):
+        return self.generation_parameters.get('rf_frequency')
+
+    @property
     def microwave_frequency(self):
         return self.generation_parameters.get('microwave_frequency')
+
+    @property
+    def iq_freq_shift(self):
+        return self.generation_parameters.get('iq_freq_shift')
 
     @property
     def microwave_amplitude(self):
         return self.generation_parameters.get('microwave_amplitude')
 
     @property
+    def rf_amplitude(self):
+        return self.generation_parameters.get('rf_amplitude')
+
+    @property
     def laser_length(self):
         return self.generation_parameters.get('laser_length')
+
+    @property
+    def repolarize_length(self):
+        return self.generation_parameters.get('repolarize_length')
 
     @property
     def wait_time(self):
         return self.generation_parameters.get('wait_time')
 
     @property
+    def cool_time(self):
+        return self.generation_parameters.get('cool_time')
+
+    @property
     def rabi_period(self):
         return self.generation_parameters.get('rabi_period')
+
+    @property
+    def rf_rabi_period(self):
+        return self.generation_parameters.get('rf_rabi_period')
 
     @property
     def sample_rate(self):
@@ -1528,6 +1567,268 @@ class PredefinedGeneratorBase:
                 length += blocks[block_name].init_length_s * (reps + 1)
                 length += blocks[block_name].increment_s * ((reps ** 2 + reps) / 2)
         return length
+
+    def _get_iq_mix_element(self, length, increment, amp=None, freq=None, phase=None):
+
+        i_ch = self.generation_parameters.get('i_channel')
+        q_ch = self.generation_parameters.get('q_channel')
+
+        iq_element = self._get_idle_element(length=length, increment=increment)
+        # The q_phase depends if we want to up or down convert. The default is up convert, and if flip is True it will
+        # be down converted.
+        q_phase = phase - 90
+        if freq < 0:
+            freq = -freq
+            q_phase = phase + 90
+
+        iq_element.pulse_function[i_ch] = SamplingFunctions.Sin(
+            amplitude=amp,
+            frequency=freq,
+            phase=phase)
+        iq_element.pulse_function[q_ch] = SamplingFunctions.Sin(
+            amplitude=amp,
+            frequency=freq,
+            phase=q_phase)
+
+        return iq_element
+
+    def _get_iq_aux_element(self, length, increment, amp=None, freq=None, phase=None):
+
+        ii_ch = self.generation_parameters.get('ii_channel')
+        qq_ch = self.generation_parameters.get('qq_channel')
+
+        iiqq_element = self._get_idle_element(length=length, increment=increment)
+        # The q_phase depends if we want to up or down convert. The default is up convert, and if flip is True it will
+        # be down converted.
+        q_phase = phase - 90
+        if freq < 0:
+            freq = -freq
+            q_phase = phase + 90
+
+        iiqq_element.pulse_function[ii_ch] = SamplingFunctions.Sin(
+            amplitude=amp,
+            frequency=freq,
+            phase=phase)
+        iiqq_element.pulse_function[qq_ch] = SamplingFunctions.Sin(
+            amplitude=amp,
+            frequency=freq,
+            phase=q_phase)
+
+        return iiqq_element
+
+    def _get_chirp_iq_aux_element(self, length, start_freq, stop_freq, amp):
+
+        ii_ch = self.generation_parameters.get('ii_channel')
+        qq_ch = self.generation_parameters.get('qq_channel')
+
+        chirp_element = self._get_idle_element(length=length, increment=0)
+        # The q_phase depends if we want to up or down convert. The default is up convert, and if flip is True it will
+        # be down converted.
+
+        chirp_element.pulse_function[ii_ch] = SamplingFunctions.Chirp(
+            amplitude=amp,
+            phase=0,
+            start_freq=start_freq,
+            stop_freq=stop_freq)
+        chirp_element.pulse_function[qq_ch] = SamplingFunctions.Chirp(
+            amplitude=amp,
+            phase=-90,
+            start_freq=start_freq,
+            stop_freq=stop_freq)
+
+        return chirp_element
+
+    def _get_chirp_iq_mix_element(self, length, start_freq, stop_freq, amp):
+
+        i_ch = self.generation_parameters.get('i_channel')
+        q_ch = self.generation_parameters.get('q_channel')
+
+        chirp_element = self._get_idle_element(length=length, increment=0)
+        # The q_phase depends if we want to up or down convert. The default is up convert, and if flip is True it will
+        # be down converted.
+
+        chirp_element.pulse_function[i_ch] = SamplingFunctions.Chirp(
+            amplitude=amp,
+            phase=0,
+            start_freq=start_freq,
+            stop_freq=stop_freq)
+        chirp_element.pulse_function[q_ch] = SamplingFunctions.Chirp(
+            amplitude=amp,
+            phase=-90,
+            start_freq=start_freq,
+            stop_freq=stop_freq)
+
+        return chirp_element
+
+    def _get_chirp_iq_aux_pi_iq_element(self, length, amp_pi, freq_pi, phase_pi, start_freq, stop_freq, amp, pi_time):
+
+        i_ch = self.generation_parameters.get('i_channel')
+        q_ch = self.generation_parameters.get('q_channel')
+
+        ii_ch = self.generation_parameters.get('ii_channel')
+        qq_ch = self.generation_parameters.get('qq_channel')
+
+        q_phase = phase_pi - 90
+        if freq_pi < 0:
+            freq = -freq_pi
+            q_phase = phase_pi + 90
+
+        chirp_element = self._get_idle_element(length=length, increment=0)
+        # The q_phase depends if we want to up or down convert. The default is up convert, and if flip is True it will
+        # be down converted.
+
+        chirp_element.pulse_function[ii_ch] = SamplingFunctions.Chirp(
+            amplitude=amp,
+            phase=0,
+            start_freq=start_freq,
+            stop_freq=stop_freq)
+        chirp_element.pulse_function[qq_ch] = SamplingFunctions.Chirp(
+            amplitude=amp,
+            phase=-90,
+            start_freq=start_freq,
+            stop_freq=stop_freq)
+        chirp_element.pulse_function[i_ch] = SamplingFunctions.Sin_wait(
+            amplitude=amp_pi,
+            frequency=freq_pi,
+            phase=phase_pi,
+            pi_time=pi_time)
+
+        chirp_element.pulse_function[q_ch] = SamplingFunctions.Sin_wait(
+            amplitude=amp_pi,
+            frequency=freq_pi,
+            phase=q_phase,
+            pi_time=pi_time)
+
+        return chirp_element
+
+    def _get_cw_element(self, length, increment, amp=None, freq=None, phase=None):
+
+        i_ch = self.generation_parameters.get('i_channel')
+        q_ch = self.generation_parameters.get('q_channel')
+
+        cw_element = self._get_laser_gate_element(length=length, increment=increment)
+        # The q_phase depends if we want to up or down convert. The default is up convert, and if flip is True it will
+        # be down converted.
+        q_phase = phase - 90
+        if freq < 0:
+            freq = -freq
+            q_phase = phase + 90
+
+        cw_element.pulse_function[i_ch] = SamplingFunctions.Sin(
+            amplitude=amp,
+            frequency=freq,
+            phase=phase)
+        cw_element.pulse_function[q_ch] = SamplingFunctions.Sin(
+            amplitude=amp,
+            frequency=freq,
+            phase=q_phase)
+
+        return cw_element
+
+    def _get_rf_element(self, length, increment, amp=None, freq=None, phase=None, envelope='square', rise_time=None):
+        """
+        Creates a RF pulse PulseBlockElement
+
+        @param float length: RF pulse duration in seconds
+        @param float increment: RF pulse duration increment in seconds
+        @param float freq: RF frequency in case of analogue MW channel in Hz
+        @param float amp: RF amplitude in case of analogue MW channel in V
+        @param float phase: RF phase in case of analogue MW channel in deg
+
+        @return: PulseBlockElement, the generated MW element
+        """
+        rf_element = self._get_idle_element(
+            length=length,
+            increment=increment)
+        if envelope == 'square':
+            rf_element.pulse_function[self.rf_channel] = SamplingFunctions.Sin(amplitude=amp, frequency=freq,
+                                                                               phase=phase)
+        elif envelope == 'erf':
+            rf_element.pulse_function[self.rf_channel] = SamplingFunctions.SinEnvelopeErf(amplitude=amp, frequency=freq,
+                                                                                          phase=phase,
+                                                                                          rise_time=rise_time)
+        else:
+            self.log.error('Unknown envelope function: {0}.'.format(envelope))
+        return rf_element
+
+    def _get_double_freq_element(self, length, increment, amp1=None, freq1=None, phase1=None,
+                                 amp2=None, freq2=None, phase2=None):
+
+        i_ch = self.generation_parameters.get('i_channel')
+        q_ch = self.generation_parameters.get('q_channel')
+
+        double_freq_element = self._get_idle_element(length=length, increment=increment)
+        # The q_phase depends if we want to up or down convert. The default is up convert, and if flip is True it will
+        # be down converted.
+        freq1, q_phase1 = _q_phase_calc(freq1, phase1)
+        freq2, q_phase2 = _q_phase_calc(freq2, phase2)
+
+        double_freq_element.pulse_function[i_ch] = SamplingFunctions.DoubleSinSum(
+            amplitude_1=amp1,
+            frequency_1=freq1,
+            phase_1=phase1,
+            amplitude_2=amp2,
+            frequency_2=freq2,
+            phase_2=phase2)
+        double_freq_element.pulse_function[q_ch] = SamplingFunctions.DoubleSinSum(
+            amplitude_1=amp1,
+            frequency_1=freq1,
+            phase_1=q_phase1,
+            amplitude_2=amp2,
+            frequency_2=freq2,
+            phase_2=q_phase2)
+
+        return double_freq_element
+
+    def get_pi_phase(self, pi_axis):
+        pi_phase_dict = {'x': 0, '-x': 180, 'y': 90, '-y': -90}
+        if pi_axis in pi_phase_dict.keys():
+            pi_phase = pi_phase_dict[pi_axis]
+        else:
+            self.log.error('Illegal input for pi_axis, '
+                           'should be one of the following: {0}'
+                           '\nUsing pi_phase=0'.format(', '.join(pi_phase_dict.keys())))
+            pi_phase = 0
+        return pi_phase
+
+    ################################################################################################
+    ####                           Common pulse elements and blocks                             ####
+    ################################################################################################
+
+    def _get_pihalf_element(self, phase=0):
+        return self._get_iq_mix_element(length=self.rabi_period / 4, increment=0, amp=self.microwave_amplitude,
+                                        freq=self.iq_freq_shift, phase=phase)
+
+    def _get_pi_element(self, phase=0):
+        return self._get_iq_mix_element(length=self.rabi_period / 2, increment=0, amp=self.microwave_amplitude,
+                                        freq=self.iq_freq_shift, phase=phase)
+
+    def _get_basic_measurement_information(self): # TODO: This is perhaps not general enough
+        return {'iq_mixing': True,
+                'microwave_frequency': self.microwave_frequency - self.iq_freq_shift,
+                'laser_ignore_list': list()}
+
+    def _get_readout_block(self, name='readout', get_ensemble=False):
+
+        readout_block = PulseBlock(name='{0}_block'.format(name))
+
+        if self.cool_time:
+            readout_block.append(self._get_idle_element(length=self.cool_time, increment=0))
+        readout_block.append(
+            self._get_laser_gate_element(length=self.laser_length, increment=0))
+        readout_block.append(self._get_delay_gate_element())
+        readout_block.append(self._get_idle_element(length=self.wait_time, increment=0))
+
+        if self.repolarize_length:
+            readout_block.append(self._get_laser_element(length=self.repolarize_length, increment=0))
+            readout_block.append(self._get_idle_element(length=self.laser_delay, increment=0))
+
+        if get_ensemble:
+            readout_ensemble = PulseBlockEnsemble(name='{0}_ensemble'.format(name), rotating_frame=False)
+            readout_ensemble.append((readout_block.name, 0))
+            return readout_block, readout_ensemble
+        else:
+            return readout_block
 
 
 class PulseObjectGenerator(PredefinedGeneratorBase):
