@@ -22,43 +22,59 @@ top-level directory of this distribution and at <https://github.com/Ulm-IQO/qudi
 
 import time
 import socket
-from core.module import Base
-from core.configoption import ConfigOption
-from core.util.helpers import byte_to_utf8, utf8_to_byte
-from interface.microwave_interface import MicrowaveInterface
-from interface.microwave_interface import MicrowaveLimits
-from interface.microwave_interface import MicrowaveMode
-from interface.microwave_interface import TriggerEdge
-#
+from qudi.core.module import Base
+from qudi.core.configoption import ConfigOption
+from qudi.util.mutex import Mutex
+# from qudi.core.util.helpers import byte_to_utf8, utf8_to_byte
+from qudi.interface.microwave_interface import MicrowaveInterface, MicrowaveConstraints
+# from qudi.interface.microwave_interface import MicrowaveLimits
+# from qudi.interface.microwave_interface import MicrowaveMode
+# from qudi.interface.microwave_interface import TriggerEdge
+from qudi.util.enums import SamplingOutputMode, TriggerEdge
+
+
 #
 # """Static functions used within methods in this file"""
 #
 #
-# def byte_to_utf8(mybytes):
-#     """
-#     Convenience function for code refactoring
-#     @param bytes mybytes the byte message to be decoded
-#     @return the decoded string in uni code
-#     """
-#     return mybytes.decode()
-#
-#
-# def utf8_to_byte(myutf8):
-#     """
-#     Convenience function for code refactoring
-#     @param string myutf8 the message to be encoded
-#     @return the encoded message in bytes
-#     """
-#     return myutf8.encode('utf-8')
+def byte_to_utf8(mybytes):
+    """
+    Convenience function for code refactoring
+    @param bytes mybytes the byte message to be decoded
+    @return the decoded string in uni code
+    """
+    return mybytes.decode()
 
 
-class MicrowaveSGS(Base, MicrowaveInterface):
+def utf8_to_byte(myutf8):
+    """
+    Convenience function for code refactoring
+    @param string myutf8 the message to be encoded
+    @return the encoded message in bytes
+    """
+    return myutf8.encode('utf-8')
+
+
+class MicrowaveSGS(MicrowaveInterface):
     """ Hardware control class to controls R&S SGS100 devices.  """
 
-    _modclass = 'MicrowaveSGS100'
-    _modtype = 'hardware'
+    # _modclass = 'MicrowaveSGS100'
+    # _modtype = 'hardware'
     ip_addr = ConfigOption('sgs_ip_address', missing='error')
     port = ConfigOption('sgs_port', missing='error')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._thread_lock = Mutex()
+        self._rm = None
+        self._device = None
+        self._constraints = None
+        self._scan_power = -20
+        self._scan_frequencies = None
+        self._scan_sample_rate = 0.
+        self._in_cw_mode = True
+
 
     def on_activate(self):
         """ Initialization performed during activation of the module. """
@@ -71,10 +87,28 @@ class MicrowaveSGS(Base, MicrowaveInterface):
         self.soc.send(utf8_to_byte('*IDN?\n'))
         self.name, self.model, self.serial, self.fw = byte_to_utf8(self.soc.recv(1024)).split('\n')[0].split(',')
 
+        freq_limits = (1e6, 6e9)
+        self._constraints = MicrowaveConstraints(
+            power_limits=(-120, 10),
+            frequency_limits=freq_limits,
+            scan_size_limits=(2, 2000),
+            sample_rate_limits=(1e-6, 50e3),  # FIXME: Look up the proper specs for sample rate
+            scan_modes=(SamplingOutputMode.JUMP_LIST,)
+        )
+
+        self._scan_frequencies = None
+        self._scan_power = self._constraints.min_power
+        self._scan_sample_rate = self._constraints.max_sample_rate
+        self._in_cw_mode = True
+
     def on_deactivate(self):
         """ Deinitialization performed during deactivation of the module."""
         self.soc.close()
         return
+
+    @property
+    def constraints(self):
+        return self._constraints
 
     def cw_on(self):
         """
@@ -177,23 +211,6 @@ class MicrowaveSGS(Base, MicrowaveInterface):
 
     def list_on(self):
         return -1
-
-    def get_limits(self):
-        """ Return the device-specific limits in a nested dictionary.
-
-          @return MicrowaveLimits: Microwave limits object
-        """
-        limits = MicrowaveLimits()
-        limits.supported_modes = (MicrowaveMode.CW, MicrowaveMode.MOD)
-
-        limits.min_frequency = 1e6
-        limits.max_frequency = 6e9
-
-        limits.min_power = -120
-        limits.max_power = 10 #This isn't the actual limit, but set here to protect the amplifier
-
-        return limits
-
 
     """Methods required by the interface but are unused in this file"""
 

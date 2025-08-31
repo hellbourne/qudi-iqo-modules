@@ -1,6 +1,6 @@
 import numpy as np
-from logic.pulsed.pulse_objects import PulseBlock, PulseBlockEnsemble, PulseSequence
-from logic.pulsed.pulse_objects import PredefinedGeneratorBase
+from qudi.logic.pulsed.pulse_objects import PulseBlock, PulseBlockEnsemble, PulseSequence
+from qudi.logic.pulsed.pulse_objects import PredefinedGeneratorBase
 
 """
 General Pulse Creation Procedure:
