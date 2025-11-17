@@ -119,7 +119,7 @@ class AWG():
         self.init_all_channels()
         self.sequence = None
         self.save_data = True
-        self.max_chunk_size = 5000000  # number of samples that are transfered in one data transfer (reduce value to save memory)
+        self.max_chunk_size = 5000000  # number of samples that are transferred in one data transfer (reduce value to save memory)
         self.empty_chunk_array_factor = 1.3
         self.uploading = False
         self.temp_sine = ()  # for square cosine debugging purposes
@@ -1152,6 +1152,12 @@ class AWG():
 
     def get_samplerate(self):
         return self.cards[1].get_samplerate()
+
+    def get_serial(self):
+        return self.cards[0].get_serial()  # will give the serial of only card no. 1
+
+    def get_serial2(self):
+        return self.cards[1].get_serial()  # will give the serial of only card no. 2
 
     def set_loops(self, loops):
         for c in self.cards:

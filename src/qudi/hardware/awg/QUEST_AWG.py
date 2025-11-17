@@ -162,6 +162,8 @@ class AWG_spectrum(PulserInterface):
         active_chan = self.get_constraints().activation_config['config1']
         self.set_analog_level(amplitude=self.analog_amplitudes)
         self.loaded_assets = dict.fromkeys(active_chan)
+        self.log.info('AWG Card 1 serial no. is ' + str(self.instance.get_serial()))
+        self.log.info('AWG Card 2 serial no. is ' + str(self.instance.get_serial2()))
 
     def on_deactivate(self):
         """ Method called when module is deactivated. If not overridden
@@ -360,7 +362,7 @@ class AWG_spectrum(PulserInterface):
         Please note that the channel index used here is not to be confused with the number suffix
         in the generic channel descriptors (i.e. 'd_ch1', 'a_ch1'). The channel index used here is
         highly hardware specific and corresponds to a collection of digital and analog channels
-        being associated to a SINGLE wavfeorm asset.
+        being associated to a SINGLE waveform asset.
         """
 
         # create new dictionary with keys = num_of_ch and item = waveform

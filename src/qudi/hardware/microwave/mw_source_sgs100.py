@@ -63,6 +63,7 @@ class MicrowaveSGS(MicrowaveInterface):
     ip_addr = ConfigOption('sgs_ip_address', missing='error')
     port = ConfigOption('sgs_port', missing='error')
 
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -75,7 +76,6 @@ class MicrowaveSGS(MicrowaveInterface):
         self._scan_sample_rate = 0.
         self._in_cw_mode = True
 
-
     def on_activate(self):
         """ Initialization performed during activation of the module. """
         socket.setdefaulttimeout(3)
@@ -86,6 +86,7 @@ class MicrowaveSGS(MicrowaveInterface):
         self.soc.connect((self.ip_addr, self.port))
         self.soc.send(utf8_to_byte('*IDN?\n'))
         self.name, self.model, self.serial, self.fw = byte_to_utf8(self.soc.recv(1024)).split('\n')[0].split(',')
+        self.log.info(self.name + self.model + self.serial + self.fw)
 
         freq_limits = (1e6, 6e9)
         self._constraints = MicrowaveConstraints(
@@ -110,6 +111,108 @@ class MicrowaveSGS(MicrowaveInterface):
     def constraints(self):
         return self._constraints
 
+    @property
+    def scan_power(self):
+        """The microwave power in dBm used for scanning. Must implement setter as well.
+
+        @return float: The currently set scanning microwave power in dBm
+        """
+        with self._thread_lock:
+            return self._scan_power
+
+    @property
+    def scan_frequencies(self):
+        """The microwave frequencies used for scanning. Must implement setter as well.
+
+        In case of scan_mode == SamplingOutputMode.JUMP_LIST, this will be a 1D numpy array.
+        In case of scan_mode == SamplingOutputMode.EQUIDISTANT_SWEEP, this will be a tuple
+        containing 3 values (freq_begin, freq_end, number_of_samples).
+        If no frequency scan has been specified, return None.
+
+        @return float[]: The currently set scanning frequencies. None if not set.
+        """
+        with self._thread_lock:
+            return self._scan_frequencies
+
+    @property
+    def scan_sample_rate(self):
+        """Read-only property returning the currently configured scan sample rate in Hz.
+
+        @return float: The currently set scan sample rate in Hz
+        """
+        with self._thread_lock:
+            return self._scan_sample_rate
+
+    @property
+    def scan_mode(self):
+        """Scan mode Enum. Must implement setter as well.
+
+        @return SamplingOutputMode: The currently set scan mode Enum
+        """
+        with self._thread_lock:
+            return SamplingOutputMode.JUMP_LIST
+
+    @property
+    def is_scanning(self):
+        """Read-Only boolean flag indicating if a scan is running at the moment. Can be used together with
+        module_state() to determine if the currently running microwave output is a scan or CW.
+        Should return False if module_state() is 'idle'.
+
+        @return bool: Flag indicating if a scan is running (True) or not (False)
+        """
+        with self._thread_lock:
+            return (self.module_state() != 'idle') and not self._in_cw_mode
+
+    @property
+    def cw_power(self):
+        """The CW microwave power in dBm. Must implement setter as well.
+
+        @return float: The currently set CW microwave power in dBm.
+        """
+        with self._thread_lock:
+            self._write(':SOUR:POW:POW?')
+            self.power = float(self._read())
+            return self.power
+
+    @property
+    def cw_frequency(self):
+        """The CW microwave frequency in Hz. Must implement setter as well.
+
+        @return float: The currently set CW microwave frequency in Hz.
+        """
+        with self._thread_lock:
+            self._write('SOUR:FREQ:CW?')
+            self.freq = float(self._read())
+            return self.freq
+
+    def configure_scan(self, power, frequencies, mode, sample_rate):
+        """
+        currently not used in the sgs100 module. needs further development if needed
+        """
+        return
+        # with self._thread_lock:
+            # Sanity checks
+            # if self.module_state() != 'idle':
+                # raise RuntimeError('Unable to configure frequency scan. Microwave output active.')
+            # self._assert_scan_configuration_args(power, frequencies, mode, sample_rate)
+
+            # configure scan according to scan mode
+            # self._scan_sample_rate = sample_rate
+            # self._scan_power = power
+            # self._scan_frequencies = np.asarray(frequencies, dtype=np.float64)
+            # self._write_list()
+
+    def reset_scan(self):
+        """
+        not implemented in sgs100 right now.
+        """
+        return
+        # with self._thread_lock:
+        #     if self.module_state() == 'idle':
+        #         return
+        #     if self._in_cw_mode:
+        #         raise RuntimeError('Can not reset frequency scan. CW microwave output active.')
+
     def cw_on(self):
         """
         Switches on cw microwave output.
@@ -117,7 +220,11 @@ class MicrowaveSGS(MicrowaveInterface):
 
         @return int: error code (0:OK, -1:error)
         """
-        return self._write(':OUTP:STAT 1')
+        reply = self._write(':OUTP:STAT 1')
+        status = self.get_status()[1]
+        if status==1:
+            self.module_state.lock()
+        return reply
 
     def off(self):
         """
@@ -127,7 +234,11 @@ class MicrowaveSGS(MicrowaveInterface):
         @return int: error code (0:OK, -1:error)
         """
         # self.set_mod(on=False)
-        return self._write(':OUTP:STAT 0')
+        reply = self._write(':OUTP:STAT 0')
+        status = self.get_status()[1]
+        if status == 0:
+            self.module_state.unlock()
+        return reply
 
     def get_status(self):
         """
@@ -212,28 +323,22 @@ class MicrowaveSGS(MicrowaveInterface):
     def list_on(self):
         return -1
 
-    """Methods required by the interface but are unused in this file"""
-
-    def sweep_on(self):
+    def start_scan(self):
+        """
+        not implemented
+        """
         return
-
-    def set_list(self, frequency=None, power=None):
-        return
-
-    def reset_listpos(self):
-        return
-
-    def set_sweep(self, start=None, stop=None, step=None, power=None):
-        return
-
-    def reset_sweeppos(self):
-        return
-
-    def set_ext_trigger(self, pol=TriggerEdge.RISING):
-        return
-
-    def trigger(self):
-        return
+        # with self._thread_lock:
+        #     if self.module_state() != 'idle':
+        #         if not self._in_cw_mode:
+        #             return
+        #         raise RuntimeError('Unable to start frequency scan. CW microwave output is active.')
+        #     assert self._scan_frequencies is not None, \
+        #         'No scan_frequencies set. Unable to start scan.'
+        #
+        #     self._in_cw_mode = False
+        #     self._rf_on()
+        #     self.module_state.lock()
 
     def _write(self, string):
         return self.soc.send(utf8_to_byte(string + '\n'))
@@ -260,4 +365,27 @@ class MicrowaveSGS(MicrowaveInterface):
 
     def _set_wideband_state(self, wb_mode = 'OFF'):
         self._write(':SOUR:IQ:WBST ' + wb_mode)
+        return
+
+    """Methods required by the interface but are unused in this file"""
+
+    def sweep_on(self):
+        return
+
+    def set_list(self, frequency=None, power=None):
+        return
+
+    def reset_listpos(self):
+        return
+
+    def set_sweep(self, start=None, stop=None, step=None, power=None):
+        return
+
+    def reset_sweeppos(self):
+        return
+
+    def set_ext_trigger(self, pol=TriggerEdge.RISING):
+        return
+
+    def trigger(self):
         return

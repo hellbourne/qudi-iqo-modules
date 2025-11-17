@@ -62,8 +62,8 @@ class PulsedMeasurementLogic(LogicBase):
         module.Class: 'pulsed.pulsed_measurement_logic.PulsedMeasurementLogic'
         options:
             raw_data_save_type: 'text'
-            #additional_extraction_path: # optional
-            #additional_analysis_path:   # optional
+            # additional_extraction_path: # optional
+            # additional_analysis_path:   # optional
         connect:
             fastcounter: 'fast_counter_dummy'
             pulsegenerator: 'pulser_dummy'
@@ -73,7 +73,7 @@ class PulsedMeasurementLogic(LogicBase):
     _fastcounter = Connector(name='fastcounter', interface='FastCounterInterface')
     _pulsegenerator = Connector(name='pulsegenerator', interface='PulserInterface')
     _microwave = Connector(name='microwave', interface='MicrowaveInterface', optional=True)
-
+    # Add a connection to OPX
     # Config options
     # Optional additional paths to import from
     extraction_import_path = ConfigOption(name='additional_extraction_path', default=None)
@@ -922,7 +922,7 @@ class PulsedMeasurementLogic(LogicBase):
                 self.fast_counter_on()
                 # start pulse generator
                 self.pulse_generator_on()
-
+                # Here should be a function executing OPX hardware program
                 # initialize analysis_timer
                 self.__elapsed_time = 0.0
                 self._elapsed_pause = 0

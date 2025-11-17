@@ -36,6 +36,7 @@ from qudi.core.configoption import ConfigOption
 from qudi.interface.pulser_interface import PulserInterface, PulserConstraints, SequenceOption
 
 
+
 class AWG7k(PulserInterface):
     """ A hardware module for the Tektronix AWG7000 series for generating
         waveforms and sequences thereof.
@@ -107,10 +108,10 @@ class AWG7k(PulserInterface):
                 ''.format(self._visa_address))
 
         # try connecting to AWG using FTP protocol
-        with FTP(self._ip_address) as ftp:
-            ftp.login(user=self._username, passwd=self._password)
-            ftp.cwd(self.ftp_working_dir)
-            self.log.debug('FTP working dir: {0}'.format(ftp.pwd()))
+        # with FTP(self._ip_address) as ftp:
+        #     ftp.login(user=self._username, passwd=self._password)
+        #     ftp.cwd(self.ftp_working_dir)
+        #     self.log.debug('FTP working dir: {0}'.format(ftp.pwd()))
 
         idn = self.query('*IDN?').split(',')
         self.mfg, self.model, self.ser, self.fw_ver = idn
@@ -122,7 +123,7 @@ class AWG7k(PulserInterface):
         #              Option 09: Subsequence and Table Jump
 
         self.installed_options = self.query('*OPT?').split(',')
-        # TODO: inclulde proper routine to check and change zeroing functionality
+        # TODO: include proper routine to check and change zeroing functionality
 
         self.log.info('Found {} {} Serial: {} FW: {} options: {}'.format(
             self.mfg, self.model, self.ser, self.fw_ver, self.installed_options
