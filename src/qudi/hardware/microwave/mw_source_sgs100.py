@@ -234,11 +234,13 @@ class MicrowaveSGS(MicrowaveInterface):
         @return int: error code (0:OK, -1:error)
         """
         # self.set_mod(on=False)
-        reply = self._write(':OUTP:STAT 0')
-        status = self.get_status()[1]
-        if status == 0:
-            self.module_state.unlock()
-        return reply
+        with self._thread_lock:
+            if self.module_state() != 'idle':
+                reply = self._write(':OUTP:STAT 0')
+                status = self.get_status()[1]
+                if status == 0:
+                    self.module_state.unlock()
+                return reply
 
     def get_status(self):
         """

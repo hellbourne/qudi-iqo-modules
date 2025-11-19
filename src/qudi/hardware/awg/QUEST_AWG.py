@@ -460,7 +460,7 @@ class AWG_spectrum(PulserInterface):
                                  is_sequence_segment=True)
         self.typeloaded = 'sequence'
         for key in self.loaded_assets.keys():
-            self.loaded_assets[key] = sequence_name + '_'
+            self.loaded_assets[key] = sequence_name  # + '_'
         self.log.info('segments sent to awg')
 
         for step_idx, step_details in enumerate(sequence):
@@ -1207,5 +1207,5 @@ class AWG_spectrum(PulserInterface):
             wave_name = full_name.rsplit('_a_ch', 1)[0]
         else:
             wave_name = None
-        return wave_name + '_'
+        return wave_name  # + '_'
 
