@@ -1185,6 +1185,10 @@ class PulsedMeasurementLogic(LogicBase):
                            'Measurement information container is incomplete/invalid.')
             return
 
+        if 'microwave_frequency' in self._measurement_information:
+            freq = self._measurement_information.get('microwave_frequency')
+            self.set_microwave_settings({'frequency': freq})
+
         if self._fastcounter().is_gated():
             self.set_fast_counter_settings(number_of_gates=self._number_of_lasers,
                                            record_length=fast_counter_record_length)

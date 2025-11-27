@@ -1201,7 +1201,7 @@ class PulsedMeasurementGui(GuiBase):
     #                Predefined Methods tab related methods                   #
     ###########################################################################
     def _activate_predefined_methods_ui(self):
-        # Contraint some widgets by hardware constraints
+        # Constrain some widgets by hardware constraints
         self._pm_apply_hardware_constraints()
 
         # Dynamically create GUI elements for global parameters

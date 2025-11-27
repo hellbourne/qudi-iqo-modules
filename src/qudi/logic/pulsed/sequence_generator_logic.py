@@ -48,7 +48,7 @@ class SequenceGeneratorLogic(LogicBase):
     """
     This is the Logic class for the pulse (sequence) generation.
 
-    It is responsible for creating the theoretical (ideal) contruction plan for a pulse sequence or
+    It is responsible for creating the theoretical (ideal) construction plan for a pulse sequence or
     waveform (digital and/or analog) by creating PulseBlockElements, PulseBlocks,
     PulseBlockEnsembles and PulseSequences.
     Based on these objects the logic can sample waveforms according to the underlying hardware
