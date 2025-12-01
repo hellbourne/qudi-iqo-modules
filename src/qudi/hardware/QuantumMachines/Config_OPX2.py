@@ -1,10 +1,9 @@
-from qm.QuantumMachinesManager import QuantumMachinesManager
-from qm.qua import *
+# from qm.QuantumMachinesManager import QuantumMachinesManager
 import numpy as np
 # from qm import SimulationConfig, ConfigHelper
-from qm import LoopbackInterface
-import matplotlib.pyplot as plt
-import time
+# from qm import LoopbackInterface
+# import matplotlib.pyplot as plt
+# import time
 from scipy import special
 x = np.linspace(-3, 3,200)
 Rise_up = special.erf(x)*0.24+0.24
@@ -28,14 +27,14 @@ config = {
     'controllers': {
 
         'finkler1': {
-            'type': 'opx1',
+            'type': 'opx2',
             'analog_outputs': {
                 1: {'offset': 0.01407},  # I
                 2: {'offset': 0.01286},  # Q
                 3: {'offset': 0.01407},  # I
                 4: {'offset': 0.01286},  # Q
-                5: {'offset': 0}, #N
-                6: {'offset': 0}, #Noise
+                5: {'offset': 0}, # N
+                6: {'offset': 0}, # Noise
             },
             'digital_outputs': {
                 1: {'offset': 0.0},

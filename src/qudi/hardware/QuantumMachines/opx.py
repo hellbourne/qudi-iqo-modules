@@ -22,7 +22,7 @@ If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 from qm import QuantumMachinesManager
-from qudi.hardware.QuantumMachines.Config_OPX2 import config
+from qudi.hardware.QuantumMachines.Config_OPX2 import config  # this is the config file from the folder
 
 from qudi.core.configoption import ConfigOption
 from qudi.core.statusvariable import StatusVar
@@ -45,6 +45,7 @@ class OPX(PulserInterface):
     _opx_ip = ConfigOption('opx_ip', '132.77.54.180', missing='warn')
     _cluster_name = ConfigOption('cluster_name', 'Cluster_1', missing='warn')
     _qmm = ''
+    _qm = ''
     _job = ''
     __current_status = 0
 
@@ -55,10 +56,10 @@ class OPX(PulserInterface):
     def on_activate(self):
         """ Establish connection to pulse streamer and tell it to cancel all operations """
         self._qmm = QuantumMachinesManager(host=self._opx_ip, cluster_name=self._cluster_name)  # should add the config file, too.
-        # self._qm = self._qmm.open_qm(config)
+        self._qm = self._qmm.open_qm(config)  # this line configures the OPX with a config file from the folder
 
     def on_deactivate(self):
-        self._qmm.close()
+        self._qmm.close_all_qms()
         del self._qmm
 
     def get_constraints(self):
@@ -210,7 +211,7 @@ class OPX(PulserInterface):
             return 0
         else:
             self.log.error('no program was defined for the OPX')
-            self.pulser_off()
+            self.pulser_off()  # not sure if this is necessary with OPX
             self.__current_status = -1
             return -1
 
@@ -220,7 +221,8 @@ class OPX(PulserInterface):
         @return int: error code (0:OK, -1:error)
         """
         self.__current_status = 0
-        self._job.halt()
+        if self._job:
+            self._job.halt()
         # self._qm.set_io1_value(1)  # this is what Inbar was using, but job.halt should be more appropriate
         return
 
